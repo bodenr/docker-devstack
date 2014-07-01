@@ -4,6 +4,7 @@ set -e
 
 CONF_VOL=/usr/local/devstack
 STACK_DIR=/home/stack/devstack
+WAIT_PIPE=/tmp/devstackp
 RESET=${RESET:0}
 
 # consumers can set NON_STANDARD_REQS for unmatched global deps.
@@ -47,12 +48,13 @@ if [ ! -f $STACK_DIR/local.conf ]; then
 	fi
 fi
 
-function unstack() {
-	su -c "cd $STACK_DIR && ./unstack.sh" stack	
-}
-
-# handle docker stop by unstacking
-trap unstack SIGTERM
-
 # run devstack
 su -c "cd $STACK_DIR && ./stack.sh" stack
+
+# trap docker stop signal
+trap 'echo Stopping container;kill $(jobs -p)' TERM
+mkfifo $WAIT_PIPE
+read < $WAIT_PIPE &
+wait
+rm $WAIT_PIPE
+su -c "cd $STACK_DIR && ./unstack.sh" stack	
