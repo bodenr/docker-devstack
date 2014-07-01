@@ -1,0 +1,22 @@
+disabled_projects:
+    - "*"
+enabled_projects:
+    - nova: stable/icehouse
+    - glance
+    - keystone
+passwords:
+    admin: s8cr8tp7a550rd
+    rabbit: s8cr8tp7a550rd
+    mysql: s8cr8tp7a550rd
+    service: s8cr8tp7a550rd
+    database: s8cr8tp7a550rd
+local:
+    fixed_range: 10.0.2.0/24
+    service_token: s8cr8tp7a550rd
+    floating_range: 10.0.2.0/24
+    fixed_network_size: 256
+    flat_interface: eth1
+    screen_logdir: $DEST/logs/screen
+    logfile: /home/stack/devstack/stack.log
+    ceilometer_backend: mongo
+    image_urls+: 'http://cloud.fedoraproject.org/fedora-20.x86_64.qcow2'

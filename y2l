@@ -1,0 +1,197 @@
+#! /usr/bin/python
+import sys
+import yaml
+
+
+class EnvVar(object):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return "%s=%s" % (self.name.upper(), self.value)
+
+
+class Cred(EnvVar):
+    def __init__(self, id, passwd):
+        super(Cred, self).__init__(id + "_PASSWORD", passwd)
+
+
+class Service(object):
+    def __init__(self, name, enabled=True):
+        self.name = name
+        self.enabled = enabled
+
+    def __str__(self):
+        return "%s_service %s" % ('enable' if self.enabled else 'disable',
+                                  self.name)
+
+
+class Project(object):
+    def __init__(self, name, services, branch='master'):
+        self.name = name
+        self.branch = branch
+        self.services = services
+
+    def _toggle_service(self, service_name, enabled):
+        for service in self.services:
+            if service.name == service_name:
+                service.enabled = enabled
+                return
+
+    def disable_service(self, service_name):
+        self._toggle_service(service_name, False)
+
+    def enable_service(self, service_name):
+        self._toggle_service(service_name, True)
+
+    def disable_all(self):
+        for service in self.services:
+            service.enabled = False
+
+    def enable_all(self):
+        for service in self.services:
+            service.enabled = True
+
+    def __str__(self):
+        _str = ""
+        for service in self.services:
+            _str += "%s\n" % str(service)
+        return "%s\n%s" % (EnvVar("%s_BRANCH" % self.name.upper(),
+                           self.branch), _str)
+
+
+class YamlConf(object):
+    WILDCARD = '*'
+
+    def __init__(self, raw_yaml):
+        self._conf = self._default_conf()
+        self._projects = self._conf['projects']
+        self._passwords = self._conf['passwords']
+        self._locals = self._conf['locals']
+        self._parse(raw_yaml)
+
+    def _parse(self, raw_yaml):
+        conf = yaml.load(raw_yaml)
+        self._process_projects(conf.get('disabled_projects', []), False)
+        self._process_projects(conf.get('enabled_projects', []), True)
+        self._process_passwords(conf.get('passwords', {}))
+        self._process_locals(conf.get('local', {}))
+
+    def _process_passwords(self, pass_map):
+        for id, passwd in pass_map.iteritems():
+            self._passwords.append(Cred(id, passwd))
+
+    def _process_locals(self, local_map):
+        for key, val in local_map.iteritems():
+            self._locals.append(EnvVar(key, val))
+
+    def _process_projects(self, projs, enabled=True):
+        toggle_all = self.enable_all if enabled else self.disable_all
+        for proj in projs:
+            name, branch = self._project_and_branch(proj)
+            if name == YamlConf.WILDCARD:
+                toggle_all(branch)
+                continue
+            elif enabled:
+                self._projects[name].enable_all()
+            else:
+                self._projects[name].disable_all()
+    
+            if branch:    
+                self._projects[name].branch = branch      
+
+    def disable_all(self, branch='master'):
+        for proj in self._projects.values():
+            proj.disable_all()
+            proj.branch = branch
+
+    def enable_all(self, branch='master'):
+        for proj in self._projects.values():
+            proj.enable_all()
+            proj.branch = branch
+
+    def _project_and_branch(self, elem):
+        return ((elem.keys()[0], elem.values()[0]) if type(elem) == dict
+                else (elem, 'master'))
+
+    def _default_conf(self):
+        projects = {
+                'nova': Project('nova',
+                                [Service('n-cpu'),
+                                 Service('n-api'),
+                                 Service('n-novnc'),
+                                 Service('n-cell'),
+                                 Service('n-obj'),
+                                 Service('n-api-meta'),
+                                 Service('n-xvnc'),
+                                 Service('n-spice'),
+                                 Service('n-cond'),
+                                 Service('n-net'),
+                                 Service('n-crt'),
+                                 Service('n-sch'),
+                                 Service('n-cauth'),
+                                 Service('n-obj')]),
+                'glance': Project('glance',
+                                  [Service('g-api'),
+                                   Service('g-reg')]),
+                'cinder': Project('cinder',
+                                  [Service('c-api'),
+                                   Service('c-vol'),
+                                   Service('c-sch'),
+                                   Service('c-bak')]),
+                'keystone': Project('keystone', [Service('key')]),
+                'horizon': Project('horizon', [Service('horizon')]),
+                'heat': Project('heat',
+                                [Service('h-eng'),
+                                 Service('h-api'),
+                                 Service('h-api-cfn'),
+                                 Service('h-api-cw')]),
+                'ceilometer': Project('ceilometer',
+                                      [Service('ceilometer-acentral'),
+                                       Service('ceilometer-anotification'),
+                                       Service('ceilometer-collector'),
+                                       Service('ceilometer-api'),
+                                       Service('ceilometer-alarm-notifier'),
+                                       Service('ceilometer-alarm-evaluator')]),
+                'ironic': Project('ironic',
+                                  [Service('ir-api'),
+                                   Service('ir-cond')]),
+                'marconi': Project('marconi', [Service('marconi-server')]),
+                'neutron': Project('neutron',
+                                   [Service('q-svc'),
+                                    Service('q-agt'),
+                                    Service('q-dhcp'),
+                                    Service('q-vpn'),
+                                    Service('q-l3'),
+                                    Service('q-domua'),
+                                    Service('q-lbaas'),
+                                    Service('q-metering'),
+                                    Service('q-meta')]),
+                'sahara': Project('sahara', [Service('sahara')]),
+                'swift': Project('swift', [Service('s-proxy')]),
+                'trove': Project('trove',
+                                 [Service('tr-api'),
+                                  Service('tr-tmgr'),
+                                  Service('tr-cond')]),
+                'tempest': Project('tempest', [Service('tempest')])}
+        return {'projects': projects, 'passwords': [], 'locals': []}
+
+    def __str__(self):
+        _str = "[[local|localrc]]\n"
+        for proj in self._projects.values():
+            _str += str(proj)
+        for passwd in self._passwords:
+            _str += "%s\n" % str(passwd)
+        for local in self._locals:
+            _str += "%s\n" % str(local)
+        return _str
+
+
+# read for stdin to get raw yaml data
+buff = ''
+for line in sys.stdin:
+    buff += line
+
+conf = YamlConf(buff)
+print("%s" % (str(conf)))
