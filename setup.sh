@@ -19,7 +19,9 @@ _EOF_
 
 # apt-get install packages
 apt-get update
-apt-get install -y gcc git python-pip python-dev sudo libyaml-dev
+apt-get install -y gcc git python-pip python-dev sudo libyaml-dev libffi-dev libssl-dev
+apt-get install -y libmysqlclient-dev
+apt-get install -y python-mysqldb
 pip install PyYaml
 
 # prep for devstack
