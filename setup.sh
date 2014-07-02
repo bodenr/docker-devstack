@@ -22,7 +22,13 @@ apt-get update
 apt-get install -y gcc git python-pip python-dev sudo libyaml-dev libffi-dev libssl-dev
 apt-get install -y libmysqlclient-dev
 apt-get install -y python-mysqldb
+# apt-get pulls in an old incompatible version of six which
+# causes problems w/some services.. hack around that by
+# getting a later version of six
+wget http://launchpadlibrarian.net/173867243/python-six_1.6.1-1_all.deb
+dpkg -i ./python-six_1.6.1-1_all.deb
 pip install PyYaml
+
 
 # prep for devstack
 STACK_PASSWORD=`date +%s | sha256sum | base64 | head -c 10 ; echo`
