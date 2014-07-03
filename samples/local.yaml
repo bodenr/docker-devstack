@@ -20,3 +20,8 @@ local:
     logfile: /home/stack/devstack/stack.log
     ceilometer_backend: mongo
     image_urls+: 'http://cloud.fedoraproject.org/fedora-20.x86_64.qcow2'
+raw: |
+	[[post-config|$NOVA_CONF]]
+	[DEFAULT]
+	verbose=True
+	debug=True

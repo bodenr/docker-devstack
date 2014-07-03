@@ -69,6 +69,7 @@ class YamlConf(object):
         self._projects = self._conf['projects']
         self._passwords = self._conf['passwords']
         self._locals = self._conf['locals']
+        self._raw = None
         self._parse(raw_yaml)
 
     def _parse(self, raw_yaml):
@@ -77,6 +78,11 @@ class YamlConf(object):
         self._process_projects(conf.get('enabled_projects', []), True)
         self._process_passwords(conf.get('passwords', {}))
         self._process_locals(conf.get('local', {}))
+        self._process_raw(conf.get('raw', None))
+
+    def _process_raw(self, raw_data):
+        if raw_data is not None:
+            self._raw = raw_data
 
     def _process_passwords(self, pass_map):
         for id, passwd in pass_map.iteritems():
@@ -185,6 +191,8 @@ class YamlConf(object):
             _str += "%s\n" % str(passwd)
         for local in self._locals:
             _str += "%s\n" % str(local)
+        if self._raw is not None:
+            _str += self._raw
         return _str
 
 
