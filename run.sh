@@ -32,6 +32,7 @@ if [ ! -d $STACK_DIR ]; then
 	# apt-get does not autostart bins, so hack around
 	sed -i '/sudo rabbitmqctl change_password/ s/^/restart_service rabbitmq-server \&\& /' $STACK_DIR/lib/rpc_backend
 	sed -i '/sudo mysql -uroot/istart_service $MYSQL' $STACK_DIR/lib/databases/mysql
+	sed -i '/install_package/arestart_service mongodb' $STACK_DIR/lib/ceilometer
 fi
 
 if [ ! -f $STACK_DIR/local.conf ]; then
