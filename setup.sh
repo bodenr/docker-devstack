@@ -19,7 +19,7 @@ _EOF_
 
 # apt-get install packages
 apt-get update
-apt-get install -y gcc git python-pip python-dev sudo libyaml-dev libffi-dev libssl-dev
+apt-get install -y gcc git python-pip python-dev sudo libyaml-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev
 apt-get install -y libmysqlclient-dev
 apt-get install -y python-mysqldb
 # apt-get pulls in an old incompatible version of six which
