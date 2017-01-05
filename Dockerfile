@@ -1,4 +1,4 @@
-FROM dockerfile/ubuntu
+FROM ubuntu
 MAINTAINER Boden Russell <bodenru@gmail.com>
 
 ADD setup.sh /setup.sh
